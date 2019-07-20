@@ -82,6 +82,7 @@ fabric.properties
 
 # Sonarlint plugin
 .idea/sonarlint
+.idea
 
 ### Terraform ###
 # Local .terraform directories
