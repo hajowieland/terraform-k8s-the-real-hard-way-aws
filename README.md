@@ -1,4 +1,29 @@
+# Terraform Kubernetes the (right) hard way on AWS!
 
+This little project creates the infrastructure in Terraform for my blog post [Kubernetes the (right) hard way on AWS](https://napo.io/posts/kubernetes-the-right-hard-way-on-aws/).
+
+You can practice creating a multi node K8s Cluster yourself for training purposes or CKA exam preparation.
+
+
+![Alt text](terraform-k8s-real-hard-way.png?raw=true "Infrastructure Diagram")
+
+## Requirements
+
+* Existing AWS Route53 Public Hosted Zone
+
+## Features
+
+* Terraform 0.12
+* 1x VPC, 3x Public Subnets, Route Tables, Routes
+* 3x Worker Nodes _(editable)_
+* 3x Master Nodes _(editable)_
+* 3x Etcd Nodes _(editable)_
+* Genertes AWS Key Pair for instances
+* Route53 Records for internal & external IPv4 addresses
+* LoadBalancer for Master Node (external kubectl access)
+* Gets most recent Ubuntu AMI for all regions
+* Install awscli, cfssl, cfssl_json via UserData
+* Allows external access from workstation IPv4 address only
 
 
 <!-- BEGINNING OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
