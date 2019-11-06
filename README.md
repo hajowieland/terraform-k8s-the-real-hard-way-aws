@@ -2,7 +2,7 @@
 
 This little project creates the infrastructure in Terraform for my blog post [Kubernetes the (right) hard way on AWS](https://napo.io/posts/kubernetes-the-right-hard-way-on-aws/).
 
-> AWS CDK Python code available [HERE](https://github.com/hajowieland/cdk-py-k8s-the-right-hard-way-aws)
+> AWS CDK Python code available 🔗 [HERE](https://github.com/hajowieland/cdk-py-k8s-the-right-hard-way-aws)
 
 
 You can practice creating a multi node K8s Cluster yourself for training purposes or CKA exam preparation.
