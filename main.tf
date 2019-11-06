@@ -13,7 +13,7 @@ data "aws_availability_zones" "available" {
   state = "available"
 }
 
-
+# Get local workstation's external IPv4 address
 data "http" "workstation-external-ip" {
   url = "http://ipv4.icanhazip.com"
 }
@@ -22,13 +22,13 @@ locals {
   workstation-external-cidr = "${chomp(data.http.workstation-external-ip.body)}/32"
 }
 
-
+# Get HostedZone ID
 data "aws_route53_zone" "selected" {
   name         = "${var.hosted_zone}."
   private_zone = false
 }
 
-
+# AWS VPC
 resource "aws_vpc" "main" {
   cidr_block                       = var.vpc_cidr
   enable_dns_hostnames             = true
@@ -42,7 +42,7 @@ resource "aws_vpc" "main" {
   }
 }
 
-
+# Public Subnets
 resource "aws_subnet" "public" {
   count                   = var.availability_zones
   availability_zone       = element(data.aws_availability_zones.available.names, count.index)
@@ -97,7 +97,7 @@ resource "aws_key_pair" "ssh" {
   public_key = file(var.ssh_public_key_path)
 }
 
-
+# SecurityGroups
 resource "aws_security_group" "allow_workstation" {
   name        = "allow_workstationctl_ssh_http_https"
   description = "Allow kubectl ssh http https inbound traffic for kubectl"
@@ -139,7 +139,7 @@ resource "aws_security_group" "allow_workstation" {
   }
 
   tags = {
-    Name    = "${var.project}-sg-workstation"
+    Name    = "${var.project}-workstation"
     Project = var.project
     Owner   = var.owner
   }
@@ -173,13 +173,17 @@ resource "aws_security_group" "allow_internal" {
   }
 }
 
-
+# etcd EC2 Instances
 resource "aws_instance" "etcd" {
-  count                  = var.etcd_instances
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.etcd_instance_type
-  subnet_id              = aws_subnet.public[count.index].id
-  key_name               = aws_key_pair.ssh.key_name
+  count         = var.etcd_instances
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = var.etcd_instance_type
+  subnet_id     = aws_subnet.public[count.index].id
+  key_name      = aws_key_pair.ssh.key_name
+  user_data = templatefile("${path.module}/userdata.tpl", {
+    component = "etcd"
+    domain    = var.hosted_zone
+  })
   ebs_optimized          = true
   monitoring             = true
   vpc_security_group_ids = [aws_security_group.allow_workstation.id, aws_security_group.allow_internal.id]
@@ -192,13 +196,17 @@ resource "aws_instance" "etcd" {
   }
 }
 
-
+# Kubernetes Master EC2 Instances
 resource "aws_instance" "master" {
-  count                  = var.master_instances
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.master_instance_type
-  subnet_id              = aws_subnet.public[count.index].id
-  key_name               = aws_key_pair.ssh.key_name
+  count         = var.master_instances
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = var.master_instance_type
+  subnet_id     = aws_subnet.public[count.index].id
+  key_name      = aws_key_pair.ssh.key_name
+  user_data = templatefile("${path.module}/userdata.tpl", {
+    component = "master"
+    domain    = var.hosted_zone
+  })
   ebs_optimized          = true
   monitoring             = true
   vpc_security_group_ids = [aws_security_group.allow_workstation.id, aws_security_group.allow_internal.id]
@@ -211,17 +219,20 @@ resource "aws_instance" "master" {
   }
 }
 
-
+# Kubernetes Worker EC2 Instances
 resource "aws_instance" "worker" {
-  count                  = var.worker_instances
-  ami                    = data.aws_ami.ubuntu.id
-  instance_type          = var.worker_instance_type
-  subnet_id              = aws_subnet.public[count.index].id
-  key_name               = aws_key_pair.ssh.key_name
+  count         = var.worker_instances
+  ami           = data.aws_ami.ubuntu.id
+  instance_type = var.worker_instance_type
+  subnet_id     = aws_subnet.public[count.index].id
+  key_name      = aws_key_pair.ssh.key_name
+  user_data = templatefile("${path.module}/userdata.tpl", {
+    component = "worker"
+    domain    = var.hosted_zone
+  })
   ebs_optimized          = true
   monitoring             = true
   vpc_security_group_ids = [aws_security_group.allow_workstation.id, aws_security_group.allow_internal.id]
-  user_data              = file("user_data.sh")
 
   tags = {
     Name    = "${var.project}-worker-${count.index + 1}"
@@ -231,33 +242,62 @@ resource "aws_instance" "worker" {
 }
 
 
-resource "aws_route53_record" "master" {
+# etcd Route53 records
+resource "aws_route53_record" "etcd-public" {
   count   = var.availability_zones
   zone_id = data.aws_route53_zone.selected.id
-  name    = "k8s-master-${var.owner}-${count.index + 1}"
+  name    = "etcd${count.index + 1}"
+  type    = "A"
+  ttl     = "300"
+  records = [aws_instance.etcd[count.index].public_ip]
+}
+
+resource "aws_route53_record" "etcd-private" {
+  count   = var.availability_zones
+  zone_id = data.aws_route53_zone.selected.id
+  name    = "etcd${count.index + 1}.internal"
+  type    = "A"
+  ttl     = "300"
+  records = [aws_instance.etcd[count.index].private_ip]
+}
+
+
+# Kubernetes Master Route53 records
+resource "aws_route53_record" "master-public" {
+  count   = var.availability_zones
+  zone_id = data.aws_route53_zone.selected.id
+  name    = "master${count.index + 1}"
   type    = "A"
   ttl     = "300"
   records = [aws_instance.master[count.index].public_ip]
 }
 
-
-resource "aws_route53_record" "worker" {
+resource "aws_route53_record" "master-private" {
   count   = var.availability_zones
   zone_id = data.aws_route53_zone.selected.id
-  name    = "k8s-worker-${var.owner}-${count.index + 1}"
+  name    = "master${count.index + 1}.internal"
+  type    = "A"
+  ttl     = "300"
+  records = [aws_instance.master[count.index].private_ip]
+}
+
+
+# Kubernetes Worker Route53 records
+resource "aws_route53_record" "worker-public" {
+  count   = var.availability_zones
+  zone_id = data.aws_route53_zone.selected.id
+  name    = "worker${count.index + 1}"
   type    = "A"
   ttl     = "300"
   records = [aws_instance.worker[count.index].public_ip]
 }
 
-
-resource "aws_eip" "eip" {
-  instance = aws_instance.master.0.id
-  vpc      = true
-
-  tags = {
-    Name    = "${var.project}-eip"
-    Project = var.project
-    Owner   = var.owner
-  }
+resource "aws_route53_record" "worker-private" {
+  count   = var.availability_zones
+  zone_id = data.aws_route53_zone.selected.id
+  name    = "worker${count.index + 1}.internal"
+  type    = "A"
+  ttl     = "300"
+  records = [aws_instance.worker[count.index].private_ip]
 }
+

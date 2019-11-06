@@ -1,13 +1,24 @@
-variable "aws_region" {
-  description = "AWS region (e.g. `us-east-1` => US North Virginia)"
+variable "project" {
+  description = "Project name used for tags"
   type        = string
-  default     = "us-east-1"
+  default     = "k8s-the-real-hard-way"
+}
+
+variable "owner" {
+  description = "Owner name used for tags"
+  type        = string
 }
 
 variable "aws_profile" {
   description = "AWS cli profile (e.g. `default`)"
   type        = string
   default     = "default"
+}
+
+variable "aws_region" {
+  description = "AWS region (e.g. `us-east-1` => US North Virginia)"
+  type        = string
+  default     = "us-east-1"
 }
 
 variable "availability_zones" {
@@ -52,17 +63,6 @@ variable "worker_instance_type" {
   default     = "t3.small"
 }
 
-variable "project" {
-  description = "Project name used for tags"
-  type        = string
-  default     = "k8s-hard-way"
-}
-
-variable "owner" {
-  description = "Owner name used for tags"
-  type        = string
-}
-
 variable "vpc_cidr" {
   description = "VPC CIDR block"
   type        = string
@@ -76,6 +76,6 @@ variable "ssh_public_key_path" {
 }
 
 variable "hosted_zone" {
-  description = "Route53 Hosted Zone for creating records (without . suffix, e.g. `example.com`)"
+  description = "Route53 Hosted Zone for creating records (without . suffix, e.g. `napo.io`)"
   type        = string
 }

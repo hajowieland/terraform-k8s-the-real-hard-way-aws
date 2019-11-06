@@ -1,14 +1,29 @@
-output "route53_worker_fqdn" {
-  description = "Route53 records for worker instances"
-  value       = [aws_route53_record.worker.*.fqdn]
+output "route53_etcd_public_fqdn" {
+  description = "Route53 records for etcd instances public"
+  value       = [aws_route53_record.etcd-public.*.fqdn]
 }
 
-output "route53_master_fqdn" {
-  description = "Route53 records for master instances"
-  value       = [aws_route53_record.master.*.fqdn]
+output "route53_etcd_private_fqdn" {
+  description = "Route53 records for etcd instances private"
+  value       = [aws_route53_record.etcd-private.*.fqdn]
 }
 
-output "elastic_ip_master" {
-  description = "Elastic IP for first master node"
-  value       = [aws_eip.eip.public_ip]
+output "route53_master_public_fqdn" {
+  description = "Route53 records for kube master instances public"
+  value       = [aws_route53_record.master-public.*.fqdn]
+}
+
+output "route53_master_private_fqdn" {
+  description = "Route53 records for kube master instances private"
+  value       = [aws_route53_record.master-private.*.fqdn]
+}
+
+output "route53_worker_public_fqdn" {
+  description = "Route53 records for kube worker instances public"
+  value       = [aws_route53_record.worker-public.*.fqdn]
+}
+
+output "route53_worker_private_fqdn" {
+  description = "Route53 records for kube worker instances private"
+  value       = [aws_route53_record.worker-private.*.fqdn]
 }
