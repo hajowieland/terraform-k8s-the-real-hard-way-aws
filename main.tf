@@ -182,7 +182,7 @@ resource "aws_instance" "etcd" {
   key_name      = aws_key_pair.ssh.key_name
   user_data = templatefile("${path.module}/userdata.tpl", {
     component = "etcd"
-    count     = "${count.index} + 1"
+    count     = count.index + 1
     domain    = var.hosted_zone
   })
   ebs_optimized          = true
@@ -206,7 +206,7 @@ resource "aws_instance" "master" {
   key_name      = aws_key_pair.ssh.key_name
   user_data = templatefile("${path.module}/userdata.tpl", {
     component = "master"
-    count     = "${count.index} + 1"
+    count     = count.index + 1
     domain    = var.hosted_zone
   })
   ebs_optimized          = true
@@ -230,7 +230,7 @@ resource "aws_instance" "worker" {
   key_name      = aws_key_pair.ssh.key_name
   user_data_base64 = base64encode(templatefile("${path.module}/userdata.tpl", {
     component = "worker"
-    count     = "${count.index} + 1"
+    count     = count.index + 1
     domain    = var.hosted_zone
   }))
   ebs_optimized          = true
