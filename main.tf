@@ -188,7 +188,7 @@ resource "aws_key_pair" "ssh" {
 }
 
 # IAM Roles for EC2 Instance Profiles
-data "aws_iam_policy_document" "ec2-assume-role" {
+data "aws_iam_policy_document" "ec2_assume_role" {
   statement {
     actions = ["sts:AssumeRole"]
     principals {
@@ -230,7 +230,7 @@ data "aws_iam_policy_document" "bastion" {
 
 resource "aws_iam_role" "bastion" {
   name_prefix        = "bastion-"
-  assume_role_policy = data.aws_iam_policy_document.ec2-assume-role.json
+  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
 
   tags = {
     Name    = "${var.project}-bastion"
@@ -255,7 +255,7 @@ resource "aws_iam_instance_profile" "bastion" {
 }
 
 ## etcd & Kubernetes instances
-data "aws_iam_policy_document" "etcd-worker-master" {
+data "aws_iam_policy_document" "etcd_worker_master" {
   statement {
     sid = "autoscaling"
     actions = [
@@ -271,10 +271,10 @@ data "aws_iam_policy_document" "etcd-worker-master" {
   }
 }
 
-resource "aws_iam_role" "etcd-worker-master" {
+resource "aws_iam_role" "etcd_worker_master" {
   name_prefix = "etcd-worker-master-"
 
-  assume_role_policy = data.aws_iam_policy_document.ec2-assume-role.json
+  assume_role_policy = data.aws_iam_policy_document.ec2_assume_role.json
 
   tags = {
     Name    = "${var.project}-etcd-worker-master"
@@ -287,15 +287,15 @@ resource "aws_iam_role" "etcd-worker-master" {
   }
 }
 
-resource "aws_iam_role_policy" "etcd-worker-master" {
+resource "aws_iam_role_policy" "etcd_worker_master" {
   name_prefix = "etcd-worker-master-"
-  role        = aws_iam_role.etcd-worker-master.id
-  policy      = data.aws_iam_policy_document.etcd-worker-master.json
+  role        = aws_iam_role.etcd_worker_master.id
+  policy      = data.aws_iam_policy_document.etcd_worker_master.json
 }
 
-resource "aws_iam_instance_profile" "etcd-worker-master" {
+resource "aws_iam_instance_profile" "etcd_worker_master" {
   name_prefix = "etcd-worker-master-"
-  role        = aws_iam_role.etcd-worker-master.name
+  role        = aws_iam_role.etcd_worker_master.name
 }
 
 
@@ -306,7 +306,7 @@ resource "aws_security_group" "bastion-lb" {
   vpc_id      = aws_vpc.main.id
 
   tags = {
-    Name    = "${var.project}-bastionlb-workstation"
+    Name    = "${var.project}-bastion-lb"
     Project = var.project
     Owner   = var.owner
   }
@@ -322,7 +322,7 @@ resource "aws_security_group" "master-public-lb" {
   vpc_id      = aws_vpc.main.id
 
   tags = {
-    Name    = "${var.project}-masterlb-public"
+    Name    = "${var.project}-master-lb-public"
     Project = var.project
     Owner   = var.owner
   }
@@ -338,7 +338,7 @@ resource "aws_security_group" "master-private-lb" {
   vpc_id      = aws_vpc.main.id
 
   tags = {
-    Name    = "${var.project}-masterlb-private"
+    Name    = "${var.project}-master-lb-private"
     Project = var.project
     Owner   = var.owner
   }
@@ -416,7 +416,7 @@ resource "aws_security_group" "worker" {
 # Security Group rules to add to above SecurityGroups
 ## Ingress
 ### Bastion LB
-resource "aws_security_group_rule" "allow-ingress-workstation-on-bastion_lb-ssh" {
+resource "aws_security_group_rule" "allow_ingress_workstation_on_bastion-lb_ssh" {
   security_group_id = aws_security_group.bastion-lb.id
   type              = "ingress"
   from_port         = 22
@@ -427,7 +427,7 @@ resource "aws_security_group_rule" "allow-ingress-workstation-on-bastion_lb-ssh"
 }
 
 ### MasterPublicLB
-resource "aws_security_group_rule" "allow-ingress-workstation-on-master_public_lb-kubectl" {
+resource "aws_security_group_rule" "allow_ingress_workstation_on-master-public-lb_kubectl" {
   security_group_id = aws_security_group.master-public-lb.id
   type              = "ingress"
   from_port         = 6443
@@ -438,7 +438,7 @@ resource "aws_security_group_rule" "allow-ingress-workstation-on-master_public_l
 }
 
 ### MasterPrivateLB
-resource "aws_security_group_rule" "allow-ingress-worker-on-master_private_lb-kubectl" {
+resource "aws_security_group_rule" "allow_ingress_worker_on_master-private-lb_kubectl" {
   security_group_id        = aws_security_group.master-private-lb.id
   type                     = "ingress"
   from_port                = 6443
@@ -448,7 +448,7 @@ resource "aws_security_group_rule" "allow-ingress-worker-on-master_private_lb-ku
   description              = "kubeapi: Workers - MasterPrivateLB"
 }
 
-resource "aws_security_group_rule" "allow-ingress-master-on-master_private_lb-kubectl" {
+resource "aws_security_group_rule" "allow_ingress_master_on_master-private-lb_kubectl" {
   security_group_id        = aws_security_group.master-private-lb.id
   type                     = "ingress"
   from_port                = 6443
@@ -458,7 +458,7 @@ resource "aws_security_group_rule" "allow-ingress-master-on-master_private_lb-ku
   description              = "kubeapi: Masters - MasterPrivateLB"
 }
 
-resource "aws_security_group_rule" "allow-ingress-bastion-on-master_private_lb-kubectl" {
+resource "aws_security_group_rule" "allow_ingress_bastion_on_master-private-lb_kubectl" {
   security_group_id        = aws_security_group.master-private-lb.id
   type                     = "ingress"
   from_port                = 6443
@@ -469,7 +469,7 @@ resource "aws_security_group_rule" "allow-ingress-bastion-on-master_private_lb-k
 }
 
 ### Bastion
-resource "aws_security_group_rule" "allow-ingress-bastion_lb-on-bastion-ssh" {
+resource "aws_security_group_rule" "allow_ingress_bastion-lb_on_bastion_ssh" {
   security_group_id        = aws_security_group.bastion.id
   type                     = "ingress"
   from_port                = 22
@@ -480,7 +480,7 @@ resource "aws_security_group_rule" "allow-ingress-bastion_lb-on-bastion-ssh" {
 }
 
 ### etcd
-resource "aws_security_group_rule" "allow-ingress-bastion-on-etcd-ssh" {
+resource "aws_security_group_rule" "allow_ingress_bastion_on_etcd_ssh" {
   security_group_id        = aws_security_group.etcd.id
   type                     = "ingress"
   from_port                = 22
@@ -490,7 +490,7 @@ resource "aws_security_group_rule" "allow-ingress-bastion-on-etcd-ssh" {
   description              = "SSH: Bastion - Etcds"
 }
 
-resource "aws_security_group_rule" "allow-ingress-master-on-etcd-etcd" {
+resource "aws_security_group_rule" "allow_ingress_master_on_etcd_etcd" {
   security_group_id        = aws_security_group.etcd.id
   type                     = "ingress"
   from_port                = 2379
@@ -500,7 +500,7 @@ resource "aws_security_group_rule" "allow-ingress-master-on-etcd-etcd" {
   description              = "etcd: Masters - Etcds"
 }
 
-resource "aws_security_group_rule" "allow-ingress-etcd-on-etcd-etcd" {
+resource "aws_security_group_rule" "allow_ingress_etcd_on_etcd_etcd" {
   security_group_id        = aws_security_group.etcd.id
   type                     = "ingress"
   from_port                = 2379
@@ -511,7 +511,7 @@ resource "aws_security_group_rule" "allow-ingress-etcd-on-etcd-etcd" {
 }
 
 ### Master
-resource "aws_security_group_rule" "allow-ingress-bastion-on-master-ssh" {
+resource "aws_security_group_rule" "allow_ingress_bastion_on_master_ssh" {
   security_group_id        = aws_security_group.master.id
   type                     = "ingress"
   from_port                = 22
@@ -521,7 +521,7 @@ resource "aws_security_group_rule" "allow-ingress-bastion-on-master-ssh" {
   description              = "SSH: Bastion - Masters"
 }
 
-resource "aws_security_group_rule" "allow-ingress-master_public_lb-on-master-kubectl" {
+resource "aws_security_group_rule" "allow_ingress_master-public-lb_on_master_kubectl" {
   security_group_id        = aws_security_group.master.id
   type                     = "ingress"
   from_port                = 6443
@@ -531,7 +531,7 @@ resource "aws_security_group_rule" "allow-ingress-master_public_lb-on-master-kub
   description              = "kubectl: MasterPublicLB - Masters"
 }
 
-resource "aws_security_group_rule" "allow-ingress-master_private_lb-on-master-kubectl" {
+resource "aws_security_group_rule" "allow_ingress_master-private-lb_on_master_kubectl" {
   security_group_id        = aws_security_group.master.id
   type                     = "ingress"
   from_port                = 6443
@@ -541,7 +541,7 @@ resource "aws_security_group_rule" "allow-ingress-master_private_lb-on-master-ku
   description              = "kubectl: MasterPrivateLB - Masters"
 }
 
-resource "aws_security_group_rule" "allow-ingress-bastion-on-master-kubectl" {
+resource "aws_security_group_rule" "allow_ingress_bastion_on_master_kubectl" {
   security_group_id        = aws_security_group.master.id
   type                     = "ingress"
   from_port                = 6443
@@ -551,7 +551,7 @@ resource "aws_security_group_rule" "allow-ingress-bastion-on-master-kubectl" {
   description              = "kubectl: Bastion - Masters"
 }
 
-resource "aws_security_group_rule" "allow-ingress-worker-on-master-kubectl" {
+resource "aws_security_group_rule" "allow_ingress_worker_on_master_kubectl" {
   security_group_id        = aws_security_group.master.id
   type                     = "ingress"
   from_port                = 6443
@@ -561,7 +561,7 @@ resource "aws_security_group_rule" "allow-ingress-worker-on-master-kubectl" {
   description              = "kubectl: Workers - Masters"
 }
 
-resource "aws_security_group_rule" "allow-ingress-worker-on-master-all" {
+resource "aws_security_group_rule" "allow_ingress_worker_on_master_all" {
   security_group_id        = aws_security_group.master.id
   type                     = "ingress"
   from_port                = 0
@@ -572,7 +572,7 @@ resource "aws_security_group_rule" "allow-ingress-worker-on-master-all" {
 }
 
 ### Worker
-resource "aws_security_group_rule" "allow-ingress-bastion-on-worker-ssh" {
+resource "aws_security_group_rule" "allow_ingress_bastion_on_worker_ssh" {
   security_group_id        = aws_security_group.worker.id
   type                     = "ingress"
   from_port                = 22
@@ -582,7 +582,7 @@ resource "aws_security_group_rule" "allow-ingress-bastion-on-worker-ssh" {
   description              = "SSH: Bastion - Workers"
 }
 
-resource "aws_security_group_rule" "allow-ingress-bastion-on-worker-kubectl" {
+resource "aws_security_group_rule" "allow_ingress_bastion_on_worker_kubectl" {
   security_group_id        = aws_security_group.worker.id
   type                     = "ingress"
   from_port                = 6443
@@ -592,7 +592,7 @@ resource "aws_security_group_rule" "allow-ingress-bastion-on-worker-kubectl" {
   description              = "kubectl: Bastion - Workers"
 }
 
-resource "aws_security_group_rule" "allow-ingress-master-on-worker-all" {
+resource "aws_security_group_rule" "allow_ingress_master_on_worker_all" {
   security_group_id        = aws_security_group.worker.id
   type                     = "ingress"
   from_port                = 0
@@ -602,7 +602,7 @@ resource "aws_security_group_rule" "allow-ingress-master-on-worker-all" {
   description              = "ALL: Master - Workers"
 }
 
-resource "aws_security_group_rule" "allow-ingress-master_private_lb-on-worker-all" {
+resource "aws_security_group_rule" "allow_ingress_master-private-lb_on_worker_all" {
   security_group_id        = aws_security_group.worker.id
   type                     = "ingress"
   from_port                = 0
@@ -614,7 +614,7 @@ resource "aws_security_group_rule" "allow-ingress-master_private_lb-on-worker-al
 
 
 ## Egress
-resource "aws_security_group_rule" "allow-egress-on-bastion_lb-all" {
+resource "aws_security_group_rule" "allow_egress_on_bastion-lb_all" {
   security_group_id = aws_security_group.bastion-lb.id
   type              = "egress"
   from_port         = 0
@@ -624,7 +624,7 @@ resource "aws_security_group_rule" "allow-egress-on-bastion_lb-all" {
   description       = "Egress ALL: Bastion-LB"
 }
 
-resource "aws_security_group_rule" "allow-egress-on-master_public_lb-all" {
+resource "aws_security_group_rule" "allow_egress_on_master-public-lb_all" {
   security_group_id = aws_security_group.master-public-lb.id
   type              = "egress"
   from_port         = 0
@@ -634,7 +634,7 @@ resource "aws_security_group_rule" "allow-egress-on-master_public_lb-all" {
   description       = "Egress ALL: MasterPrivateLB"
 }
 
-resource "aws_security_group_rule" "allow-egress-on-master_private_lb-all" {
+resource "aws_security_group_rule" "allow_egress_on_master-private-lb_all" {
   security_group_id = aws_security_group.master-private-lb.id
   type              = "egress"
   from_port         = 0
@@ -644,7 +644,7 @@ resource "aws_security_group_rule" "allow-egress-on-master_private_lb-all" {
   description       = "Egress ALL: MasterPublicLB"
 }
 
-resource "aws_security_group_rule" "allow-egress-on-bastion-all" {
+resource "aws_security_group_rule" "allow_egress_on_bastion_all" {
   security_group_id = aws_security_group.bastion.id
   type              = "egress"
   from_port         = 0
@@ -654,7 +654,7 @@ resource "aws_security_group_rule" "allow-egress-on-bastion-all" {
   description       = "Egress All: Bastion"
 }
 
-resource "aws_security_group_rule" "allow-egress-on-etcd-all" {
+resource "aws_security_group_rule" "allow_egress_on_etcd_all" {
   security_group_id = aws_security_group.etcd.id
   type              = "egress"
   from_port         = 0
@@ -664,7 +664,7 @@ resource "aws_security_group_rule" "allow-egress-on-etcd-all" {
   description       = "Egress ALL: Etcds"
 }
 
-resource "aws_security_group_rule" "allow-egress-on-master-all" {
+resource "aws_security_group_rule" "allow_egress_on_master_all" {
   security_group_id = aws_security_group.master.id
   type              = "egress"
   from_port         = 0
@@ -674,7 +674,7 @@ resource "aws_security_group_rule" "allow-egress-on-master-all" {
   description       = "Egress ALL: Masters"
 }
 
-resource "aws_security_group_rule" "allow-egress-on-worker-all" {
+resource "aws_security_group_rule" "allow_egress_on_worker_all" {
   security_group_id = aws_security_group.worker.id
   type              = "egress"
   from_port         = 0
@@ -782,7 +782,7 @@ resource "aws_launch_configuration" "etcd" {
   associate_public_ip_address = false
   ebs_optimized               = true
   enable_monitoring           = true
-  iam_instance_profile        = aws_iam_instance_profile.etcd-worker-master.id
+  iam_instance_profile        = aws_iam_instance_profile.etcd_worker_master.id
 
   user_data = templatefile("${path.module}/userdata.tpl", {
     domain = var.hosted_zone
@@ -803,7 +803,7 @@ resource "aws_launch_configuration" "master" {
   associate_public_ip_address = false
   ebs_optimized               = true
   enable_monitoring           = true
-  iam_instance_profile        = aws_iam_instance_profile.etcd-worker-master.id
+  iam_instance_profile        = aws_iam_instance_profile.etcd_worker_master.id
 
   user_data = templatefile("${path.module}/userdata.tpl", {
     domain = var.hosted_zone
@@ -824,7 +824,7 @@ resource "aws_launch_configuration" "worker" {
   associate_public_ip_address = false
   ebs_optimized               = true
   enable_monitoring           = true
-  iam_instance_profile        = aws_iam_instance_profile.etcd-worker-master.id
+  iam_instance_profile        = aws_iam_instance_profile.etcd_worker_master.id
 
   user_data = templatefile("${path.module}/userdata-worker.tpl", {
     pod_cidr = var.pod_cidr
