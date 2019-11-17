@@ -54,6 +54,7 @@ You can practice creating a multi node K8s Cluster yourself for training purpose
 | master\_min\_size | Minimum number of EC2 instances for K8s Master AutoScalingGroup | number | `"3"` | no |
 | master\_size | Desired number of EC2 instances for K8s Master AutoScalingGroup | number | `"3"` | no |
 | owner | Owner name used for tags | string | `"napo.io"` | no |
+| pod\_cidr | The first two octets for the Pod network CIDR (used in Worker UserData to generate POD_CIDR envvar) | string | `"10.200"` | no |
 | project | Project name used for tags | string | `"k8s-the-right-hard-way-aws"` | no |
 | ssh\_public\_key\_path | SSH public key path (to create a new AWS Key Pair from existing local SSH public RSA key) | string | `"~/.ssh/id_rsa.pub"` | no |
 | stage | Environment name (e.g. `testing`, `dev`, `staging`, `prod`) | string | `"testing"` | no |
@@ -67,5 +68,6 @@ You can practice creating a multi node K8s Cluster yourself for training purpose
 | Name | Description |
 |------|-------------|
 | route53\_bastion\_public\_fqdn | Route53 record for Bastion Host instances |
+| route53\_master-public-lb\_public\_fqdn | Route53 record for Master Public Load Balancer |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
