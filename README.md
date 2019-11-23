@@ -1,8 +1,8 @@
-# Terraform Kubernetes the (right) hard way on AWS!
+# Terraform - Kubernetes The (real) Hard Way on AWS!
 
-This little project creates the infrastructure in Terraform for my blog post [Kubernetes the (right) hard way on AWS](https://napo.io/posts/kubernetes-the-right-hard-way-on-aws/).
+This little project creates the infrastructure in Terraform for my blog post [Kubernetes The (real) Hard Way on AWS](https://napo.io/posts/kubernetes-the-real-hard-way-on-aws/).
 
-> AWS CDK Python code available 🔗 [HERE](https://github.com/hajowieland/cdk-py-k8s-the-right-hard-way-aws)
+> AWS CDK Python code available 🔗 [HERE](https://github.com/hajowieland/cdk-py-k8s-the-real-hard-way-aws)
 
 
 You can practice creating a multi node K8s Cluster yourself for training purposes or CKA exam preparation.
@@ -55,7 +55,7 @@ You can practice creating a multi node K8s Cluster yourself for training purpose
 | master\_size | Desired number of EC2 instances for K8s Master AutoScalingGroup | number | `"3"` | no |
 | owner | Owner name used for tags | string | `"napo.io"` | no |
 | pod\_cidr | The first two octets for the Pod network CIDR (used in Worker UserData to generate POD_CIDR envvar) | string | `"10.200"` | no |
-| project | Project name used for tags | string | `"k8s-the-right-hard-way-aws"` | no |
+| project | Project name used for tags | string | `"k8s-the-real-hard-way-aws"` | no |
 | ssh\_public\_key\_path | SSH public key path (to create a new AWS Key Pair from existing local SSH public RSA key) | string | `"~/.ssh/id_rsa.pub"` | no |
 | stage | Environment name (e.g. `testing`, `dev`, `staging`, `prod`) | string | `"testing"` | no |
 | worker\_instance\_type | EC2 instance type for K8s worker instances | string | `"t3a.small"` | no |
