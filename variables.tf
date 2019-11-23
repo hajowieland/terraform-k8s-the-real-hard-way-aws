@@ -98,12 +98,6 @@ variable "etcd_size" {
   default     = 3
 }
 
-variable "etcd_instances" {
-  description = "Number of EC2 instances to provision for etcd"
-  type        = number
-  default     = 3
-}
-
 variable "master_max_size" {
   description = "Maximum number of EC2 instances for K8s Master AutoScalingGroup"
   type        = number
@@ -129,7 +123,7 @@ variable "worker_max_size" {
 }
 
 variable "worker_min_size" {
-  description = "Minimum nnumber of EC2 instances for K8s Worker AutoScalingGroup"
+  description = "Minimum number of EC2 instances for K8s Worker AutoScalingGroup"
   type        = number
   default     = 3
 }

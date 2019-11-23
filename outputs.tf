@@ -1,5 +1,5 @@
 output "route53_bastion_public_fqdn" {
-  description = "Route53 record for Bastion Host instances"
+  description = "Route53 record for Bastion Host Load Balancer"
   value       = aws_route53_record.bastion-public.fqdn
 }
 

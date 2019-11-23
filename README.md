@@ -46,7 +46,6 @@ You can practice creating a multi node K8s Cluster yourself for training purpose
 | bastion\_min\_size | Minimum number of EC2 instances for Bastion AutoScalingGroup | number | `"1"` | no |
 | bastion\_size | Desired number of EC2 instances for Bastion AutoScalingGroup | number | `"1"` | no |
 | etcd\_instance\_type | EC2 instance type for etcd instances | string | `"t3a.small"` | no |
-| etcd\_instances | Number of EC2 instances to provision for etcd | number | `"3"` | no |
 | etcd\_max\_size | Maximum number of EC2 instances for etcd AutoScalingGroup | number | `"3"` | no |
 | etcd\_min\_size | Minimum number of EC2 instances for etcd AutoScalingGroup | number | `"3"` | no |
 | etcd\_size | Desired number of EC2 instances for etcd AutoScalingGroup | number | `"3"` | no |
@@ -57,19 +56,19 @@ You can practice creating a multi node K8s Cluster yourself for training purpose
 | master\_size | Desired number of EC2 instances for K8s Master AutoScalingGroup | number | `"3"` | no |
 | owner | Owner name used for tags | string | `"napo.io"` | no |
 | pod\_cidr | The first two octets for the Pod network CIDR (used in Worker UserData to generate POD_CIDR envvar) | string | `"10.200"` | no |
-| project | Project name used for tags | string | `"k8s-the-real-hard-way-aws"` | no |
+| project | Project name used for tags | string | `"k8s-the-right-hard-way-aws"` | no |
 | ssh\_public\_key\_path | SSH public key path (to create a new AWS Key Pair from existing local SSH public RSA key) | string | `"~/.ssh/id_rsa.pub"` | no |
 | stage | Environment name (e.g. `testing`, `dev`, `staging`, `prod`) | string | `"testing"` | no |
 | worker\_instance\_type | EC2 instance type for K8s worker instances | string | `"t3a.small"` | no |
 | worker\_max\_size | Maximum number of EC2 instances for K8s Worker AutoScalingGroup | number | `"3"` | no |
-| worker\_min\_size | Minimum nnumber of EC2 instances for K8s Worker AutoScalingGroup | number | `"3"` | no |
+| worker\_min\_size | Minimum number of EC2 instances for K8s Worker AutoScalingGroup | number | `"3"` | no |
 | worker\_size | Desired number of EC2 instances for K8s Worker AutoScalingGroup | number | `"3"` | no |
 
 ## Outputs
 
 | Name | Description |
 |------|-------------|
-| route53\_bastion\_public\_fqdn | Route53 record for Bastion Host instances |
+| route53\_bastion\_public\_fqdn | Route53 record for Bastion Host Load Balancer |
 | route53\_master-public-lb\_public\_fqdn | Route53 record for Master Public Load Balancer |
 
 <!-- END OF PRE-COMMIT-TERRAFORM DOCS HOOK -->
