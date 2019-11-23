@@ -23,7 +23,9 @@ You can practice creating a multi node K8s Cluster yourself for training purpose
 * 3x Etcd Nodes _(editable)_
 * Genertes AWS Key Pair for instances
 * Route53 Records for internal & external IPv4 addresses
-* LoadBalancer for Master Node (external kubectl access)
+* 1x Public LoadBalancer for Master Nodes (external kubectl access)
+* 1x Private LoadBalancer for Master Nodes (fronting kube-apiservers)
+* 1x Public LoadBalancer for Bation Host (AutoScalingGroup)
 * Gets most recent Ubuntu AMI for all regions
 * Install awscli, cfssl, cfssl_json via UserData
 * Allows external access from workstation IPv4 address only
