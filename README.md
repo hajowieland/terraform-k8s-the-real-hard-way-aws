@@ -12,6 +12,7 @@ You can practice creating a multi node K8s Cluster yourself for training purpose
 
 ## Requirements
 
+* aws-cli Profile
 * Existing AWS Route53 Public Hosted Zone
 
 ## Features
