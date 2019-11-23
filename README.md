@@ -16,11 +16,14 @@ You can practice creating a multi node K8s Cluster yourself for training purpose
 
 ## Features
 
+_Default values - you can adapt all of them to your needs_
+
 * Terraform 0.12
-* 1x VPC, 3x Public Subnets, Route Tables, Routes
-* 3x Worker Nodes _(editable)_
-* 3x Master Nodes _(editable)_
-* 3x Etcd Nodes _(editable)_
+* 1x VPC, 3x Public Subnets, 3x Private Subnets, Route Tables, Routes
+* 3x Worker Nodes
+* 3x Master Nodes
+* 3x Etcd Nodes
+* 1x Bastion Host
 * Genertes AWS Key Pair for instances
 * Route53 Records for internal & external IPv4 addresses
 * 1x Public LoadBalancer for Master Nodes (external kubectl access)
