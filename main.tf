@@ -203,13 +203,13 @@ data "aws_iam_policy_document" "bastion" {
   statement {
     sid = "bastion"
     actions = [
+      "autoscaling:DescribeAutoScalingInstances",
       "ec2:CreateRoute",
       "ec2:CreateTags",
       "ec2:DescribeAutoScalingGroups",
-      "autoscaling:DescribeAutoScalingInstances",
+      "ec2:DescribeInstances",
       "ec2:DescribeRegions",
       "ec2:DescribeRouteTables",
-      "ec2:DescribeInstances",
       "ec2:DescribeTags",
       "elasticloadbalancing:DescribeLoadBalancers",
       "route53:ListHostedZonesByName"
@@ -260,10 +260,10 @@ data "aws_iam_policy_document" "etcd_worker_master" {
     sid = "autoscaling"
     actions = [
       "ec2:DescribeAvailabilityZones",
+      "ec2:DescribeInstances",
       "ec2:DescribeNetworkInterfaces",
       "ec2:DescribeRegions",
       "ec2:DescribeRouteTables",
-      "ec2:DescribeInstances",
       "ec2:DescribeTags",
       "elasticloadbalancing:DescribeLoadBalancers"
     ]
@@ -415,6 +415,47 @@ resource "aws_security_group" "worker" {
 
 # Security Group rules to add to above SecurityGroups
 ## Ingress
+resource "aws_security_group_rule" "ssh" {
+  for_each = {
+    "Etcd"    = aws_security_group.etcd.id,
+    "Masters" = aws_security_group.master.id,
+    "Workers" = aws_security_group.worker.id,
+  }
+  security_group_id        = each.value
+  type                     = "ingress"
+  from_port                = 22
+  to_port                  = 22
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.bastion.id
+  description              = "SSH: Bastion - ${each.key}"
+}
+
+### Bastion Host
+resource "aws_security_group_rule" "allow_ingress_on_bastion_kubectl" {
+  for_each = {
+    "MasterPrivateLB" = aws_security_group.master-private-lb.id,
+    "Masters"         = aws_security_group.master.id,
+    "Workers"         = aws_security_group.worker.id
+  }
+  security_group_id        = each.value
+  type                     = "ingress"
+  from_port                = 6443
+  to_port                  = 6443
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.bastion.id
+  description              = "kubectl: Bastion - ${each.key}"
+}
+
+resource "aws_security_group_rule" "allow_ingress_bastion-lb_on_bastion_ssh" {
+  security_group_id        = aws_security_group.bastion.id
+  type                     = "ingress"
+  from_port                = 22
+  to_port                  = 22
+  protocol                 = "tcp"
+  source_security_group_id = aws_security_group.bastion-lb.id
+  description              = "SSH: Bastion-LB - Bastion"
+}
+
 ### Bastion LB
 resource "aws_security_group_rule" "allow_ingress_workstation_on_bastion-lb_ssh" {
   security_group_id = aws_security_group.bastion-lb.id
@@ -438,127 +479,45 @@ resource "aws_security_group_rule" "allow_ingress_workstation_on-master-public-l
 }
 
 ### MasterPrivateLB
-resource "aws_security_group_rule" "allow_ingress_worker_on_master-private-lb_kubectl" {
-  security_group_id        = aws_security_group.master-private-lb.id
-  type                     = "ingress"
-  from_port                = 6443
-  to_port                  = 6443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.worker.id
-  description              = "kubeapi: Workers - MasterPrivateLB"
-}
-
-resource "aws_security_group_rule" "allow_ingress_master_on_master-private-lb_kubectl" {
-  security_group_id        = aws_security_group.master-private-lb.id
-  type                     = "ingress"
-  from_port                = 6443
-  to_port                  = 6443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.master.id
-  description              = "kubeapi: Masters - MasterPrivateLB"
-}
-
-resource "aws_security_group_rule" "allow_ingress_bastion_on_master-private-lb_kubectl" {
-  security_group_id        = aws_security_group.master-private-lb.id
-  type                     = "ingress"
-  from_port                = 6443
-  to_port                  = 6443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.bastion.id
-  description              = "kubeapi: Bastion - MasterPrivateLB"
-}
-
-### Bastion
-resource "aws_security_group_rule" "allow_ingress_bastion-lb_on_bastion_ssh" {
-  security_group_id        = aws_security_group.bastion.id
-  type                     = "ingress"
-  from_port                = 22
-  to_port                  = 22
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.bastion-lb.id
-  description              = "SSH: Bastion-LB - Bastion"
+resource "aws_security_group_rule" "allow_ingress_on_master-private-lb_kubeapi" {
+  security_group_id = aws_security_group.master-private-lb
+  type              = "ingress"
+  from_port         = 6443
+  to_port           = 6443
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  description       = "kubeapi: ALL - MasterPrivateLB"
 }
 
 ### etcd
-resource "aws_security_group_rule" "allow_ingress_bastion_on_etcd_ssh" {
-  security_group_id        = aws_security_group.etcd.id
-  type                     = "ingress"
-  from_port                = 22
-  to_port                  = 22
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.bastion.id
-  description              = "SSH: Bastion - Etcds"
-}
-
-resource "aws_security_group_rule" "allow_ingress_master_on_etcd_etcd" {
+resource "aws_security_group_rule" "allow_etcd" {
+  for_each = {
+    "Masters" = aws_security_group.master.id,
+    "Etcd"    = aws_security_group.etcd.id
+  }
   security_group_id        = aws_security_group.etcd.id
   type                     = "ingress"
   from_port                = 2379
   to_port                  = 2380
   protocol                 = "tcp"
-  source_security_group_id = aws_security_group.master.id
-  description              = "etcd: Masters - Etcds"
-}
-
-resource "aws_security_group_rule" "allow_ingress_etcd_on_etcd_etcd" {
-  security_group_id        = aws_security_group.etcd.id
-  type                     = "ingress"
-  from_port                = 2379
-  to_port                  = 2380
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.etcd.id
-  description              = "etcd: Etcds - Etcds"
+  source_security_group_id = each.value
+  description              = "etcd: ${each.key} - Etcds"
 }
 
 ### Master
-resource "aws_security_group_rule" "allow_ingress_bastion_on_master_ssh" {
-  security_group_id        = aws_security_group.master.id
-  type                     = "ingress"
-  from_port                = 22
-  to_port                  = 22
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.bastion.id
-  description              = "SSH: Bastion - Masters"
-}
-
-resource "aws_security_group_rule" "allow_ingress_master-public-lb_on_master_kubectl" {
+resource "aws_security_group_rule" "allow_kubectl_on_master" {
+  for_each = {
+    "MasterPublicLB"  = aws_security_group.master-public-lb.id,
+    "MasterPrivateLB" = aws_security_group.master-private-lb.id,
+    "Workers"         = aws_security_group.worker.id
+  }
   security_group_id        = aws_security_group.master.id
   type                     = "ingress"
   from_port                = 6443
   to_port                  = 6443
   protocol                 = "tcp"
-  source_security_group_id = aws_security_group.master-public-lb.id
-  description              = "kubectl: MasterPublicLB - Masters"
-}
-
-resource "aws_security_group_rule" "allow_ingress_master-private-lb_on_master_kubectl" {
-  security_group_id        = aws_security_group.master.id
-  type                     = "ingress"
-  from_port                = 6443
-  to_port                  = 6443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.master-private-lb.id
-  description              = "kubectl: MasterPrivateLB - Masters"
-}
-
-resource "aws_security_group_rule" "allow_ingress_bastion_on_master_kubectl" {
-  security_group_id        = aws_security_group.master.id
-  type                     = "ingress"
-  from_port                = 6443
-  to_port                  = 6443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.bastion.id
-  description              = "kubectl: Bastion - Masters"
-}
-
-resource "aws_security_group_rule" "allow_ingress_worker_on_master_kubectl" {
-  security_group_id        = aws_security_group.master.id
-  type                     = "ingress"
-  from_port                = 6443
-  to_port                  = 6443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.worker.id
-  description              = "kubectl: Workers - Masters"
+  source_security_group_id = each.value
+  description              = "kubectl: ${each.key} - Masters"
 }
 
 resource "aws_security_group_rule" "allow_ingress_worker_on_master_all" {
@@ -572,118 +531,39 @@ resource "aws_security_group_rule" "allow_ingress_worker_on_master_all" {
 }
 
 ### Worker
-resource "aws_security_group_rule" "allow_ingress_bastion_on_worker_ssh" {
-  security_group_id        = aws_security_group.worker.id
-  type                     = "ingress"
-  from_port                = 22
-  to_port                  = 22
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.bastion.id
-  description              = "SSH: Bastion - Workers"
-}
-
-resource "aws_security_group_rule" "allow_ingress_bastion_on_worker_kubectl" {
-  security_group_id        = aws_security_group.worker.id
-  type                     = "ingress"
-  from_port                = 6443
-  to_port                  = 6443
-  protocol                 = "tcp"
-  source_security_group_id = aws_security_group.bastion.id
-  description              = "kubectl: Bastion - Workers"
-}
-
-resource "aws_security_group_rule" "allow_ingress_master_on_worker_all" {
+resource "aws_security_group_rule" "allow_ingress_on_worker_all" {
+  for_each = {
+    "Masters"         = aws_security_group.master.id,
+    "MasterPrivateLB" = aws_security_group.master-private-lb.id
+  }
   security_group_id        = aws_security_group.worker.id
   type                     = "ingress"
   from_port                = 0
   to_port                  = 65535
   protocol                 = "all"
-  source_security_group_id = aws_security_group.master.id
-  description              = "ALL: Master - Workers"
+  source_security_group_id = each.value
+  description              = "ALL: ${each.key} - Workers"
 }
-
-resource "aws_security_group_rule" "allow_ingress_master-private-lb_on_worker_all" {
-  security_group_id        = aws_security_group.worker.id
-  type                     = "ingress"
-  from_port                = 0
-  to_port                  = 65535
-  protocol                 = "all"
-  source_security_group_id = aws_security_group.master-private-lb.id
-  description              = "ALL: MasterPrivateLB - Workers"
-}
-
 
 ## Egress
-resource "aws_security_group_rule" "allow_egress_on_bastion-lb_all" {
-  security_group_id = aws_security_group.bastion-lb.id
+resource "aws_security_group_rule" "egress_all" {
+  for_each = {
+    "BastionLB"       = aws_security_group.bastion-lb.id,
+    "MasterPublicLB"  = aws_security_group.master-public-lb.id,
+    "MasterPrivateLB" = aws_security_group.master-private-lb.id,
+    "Bastion"         = aws_security_group.bastion.id,
+    "Etcds"           = aws_security_group.etcd.id,
+    "Masters"         = aws_security_group.master.id,
+    "Workers"         = aws_security_group.worker.id
+  }
+  security_group_id = each.value
   type              = "egress"
   from_port         = 0
   to_port           = 0
   protocol          = "-1"
   cidr_blocks       = ["0.0.0.0/0"]
-  description       = "Egress ALL: Bastion-LB"
+  description       = "Egress ALL: ${each.key}"
 }
-
-resource "aws_security_group_rule" "allow_egress_on_master-public-lb_all" {
-  security_group_id = aws_security_group.master-public-lb.id
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-  description       = "Egress ALL: MasterPrivateLB"
-}
-
-resource "aws_security_group_rule" "allow_egress_on_master-private-lb_all" {
-  security_group_id = aws_security_group.master-private-lb.id
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-  description       = "Egress ALL: MasterPublicLB"
-}
-
-resource "aws_security_group_rule" "allow_egress_on_bastion_all" {
-  security_group_id = aws_security_group.bastion.id
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-  description       = "Egress All: Bastion"
-}
-
-resource "aws_security_group_rule" "allow_egress_on_etcd_all" {
-  security_group_id = aws_security_group.etcd.id
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-  description       = "Egress ALL: Etcds"
-}
-
-resource "aws_security_group_rule" "allow_egress_on_master_all" {
-  security_group_id = aws_security_group.master.id
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-  description       = "Egress ALL: Masters"
-}
-
-resource "aws_security_group_rule" "allow_egress_on_worker_all" {
-  security_group_id = aws_security_group.worker.id
-  type              = "egress"
-  from_port         = 0
-  to_port           = 0
-  protocol          = "-1"
-  cidr_blocks       = ["0.0.0.0/0"]
-  description       = "Egress ALL: Workers"
-}
-
 
 # Load Balancer
 ## Bastion Host
