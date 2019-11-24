@@ -480,7 +480,7 @@ resource "aws_security_group_rule" "allow_ingress_workstation_on-master-public-l
 
 ### MasterPrivateLB
 resource "aws_security_group_rule" "allow_ingress_on_master-private-lb_kubeapi" {
-  security_group_id = aws_security_group.master-private-lb
+  security_group_id = aws_security_group.master-private-lb.id
   type              = "ingress"
   from_port         = 6443
   to_port           = 6443
